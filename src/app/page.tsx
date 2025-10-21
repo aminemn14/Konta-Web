@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Users as UsersIcon,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -31,6 +31,39 @@ const GREEN = "#16A34A";
 const RED = "#DC2626";
 const AMBER = "#F59E0B";
 const MUTED = "#9CA3AF";
+
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+// Util pour label custom
+const RADIAN = Math.PI / 180;
+function makePieLabelRenderer(fontSize: number, textColor = "#374151") {
+  return (props: any) => {
+    const { cx, cy, midAngle, outerRadius, name, value } = props;
+    const radius = outerRadius + 12; // distance du texte par rapport au donut
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor={x > cx ? "start" : "end"}
+        dominantBaseline="central"
+        style={{ fontSize, fill: textColor }}
+      >
+        {`${name} (${value})`}
+      </text>
+    );
+  };
+}
 
 function formatEUR(n: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -54,6 +87,13 @@ function sameMonth(a: Date, b: Date) {
 
 export default function Home() {
   const today = new Date();
+  const isMobile = useIsMobile();
+
+  const legendFont = isMobile ? 10 : 12;
+  const legendIcon = isMobile ? 8 : 10;
+  const pieOuter = isMobile ? 80 : 90;
+  const pieInner = isMobile ? 52 : 60;
+  const pieLabel = makePieLabelRenderer(isMobile ? 10 : 12);
 
   // ---- Aggregations from mocks ----
   const {
@@ -328,17 +368,24 @@ export default function Home() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
+                  innerRadius={pieInner}
+                  outerRadius={pieOuter}
                   paddingAngle={4}
                   labelLine={false}
-                  label={({ name, value }) => `${name} (${value})`}
+                  // 👇 label custom avec font responsive
+                  label={pieLabel}
                 >
                   {statusPie.map((entry, idx) => (
                     <Cell key={idx} fill={entry.color} />
                   ))}
                 </Pie>
-                <Legend />
+
+                {/* 👇 Légende responsive */}
+                <Legend
+                  wrapperStyle={{ fontSize: legendFont, lineHeight: "16px" }}
+                  iconSize={legendIcon}
+                />
+
                 <Tooltip formatter={(v: number, n: string) => [`${v}`, n]} />
               </PieChart>
             </ResponsiveContainer>
