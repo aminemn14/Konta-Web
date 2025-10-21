@@ -1,5 +1,4 @@
-import { Header } from "@/components/Header";
-import { Sidebar } from "@/components/Sidebar";
+import { AppShell } from "@/components/AppShell";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
@@ -23,14 +22,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${poppins.variable} font-sans antialiased bg-white text-gray-900`}
+        className={`${poppins.variable} font-sans antialiased bg-white text-gray-900 min-h-screen overflow-x-hidden`}
       >
-        <Sidebar />
-
-        <div className="ml-64">
-          <Header />
-          <main className="p-6 pt-24">{children}</main>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

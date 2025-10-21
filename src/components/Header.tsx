@@ -2,30 +2,34 @@
 
 import { CommandPalette } from "@/components/CommandPalette";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Search } from "lucide-react";
+import { Menu, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void; // ouvre la sidebar mobile
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const [open, setOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMac, setIsMac] = useState<boolean | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Détecte Mac pour afficher ⌘K
+  // Détecte Mac pour afficher ⌘K sans flicker
   useEffect(() => {
     const ua =
       (navigator as any).userAgentData?.platform || navigator.platform || "";
     setIsMac(/Mac/i.test(ua));
   }, []);
 
-  // ⌘K / Ctrl+K pour ouvrir la palette (hors champs)
+  // Raccourci ⌘K / Ctrl+K (hors champs)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const key = (e.key || "").toLowerCase();
-      const isTypingInField = !!(e.target as HTMLElement)?.closest(
+      const isTyping = !!(e.target as HTMLElement)?.closest(
         "input, textarea, select, [contenteditable='true']"
       );
-      if (isTypingInField) return;
+      if (isTyping) return;
 
       const isMacOS = /Mac/i.test(
         ((navigator as any).userAgentData?.platform ||
@@ -41,26 +45,21 @@ export function Header() {
         setOpen(true);
       }
     };
-
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Click outside / ESC pour fermer le dropdown
   useEffect(() => {
     if (!showDropdown) return;
-
     const onPointerDown = (e: PointerEvent) => {
       if (!dropdownRef.current) return;
       const target = e.target as Node;
-      if (!dropdownRef.current.contains(target)) {
-        setShowDropdown(false);
-      }
+      if (!dropdownRef.current.contains(target)) setShowDropdown(false);
     };
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowDropdown(false);
     };
-
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
@@ -73,13 +72,24 @@ export function Header() {
     <>
       <header
         className="
-          fixed top-0 right-0 left-64
+          fixed top-0 right-0 left-0 lg:left-64
           h-20 z-40
           bg-white border-b border-gray-200
-          flex items-center justify-between px-6 gap-4
+          flex items-center justify-between px-4 md:px-6 gap-3
         "
       >
-        {/* Bouton qui ouvre la Command Palette (prend toute la largeur) */}
+        {/* Bouton menu (visible mobile) */}
+        <div className="lg:hidden shrink-0">
+          <button
+            onClick={onMenuClick}
+            aria-label="Ouvrir le menu"
+            className="inline-flex items-center justify-center rounded-md border border-gray-200 w-10 h-10 hover:bg-gray-50 transition"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Bouton qui ouvre la Command Palette (prend la place disponible) */}
         <div className="relative flex-1">
           <button
             id="open-cmdk"
@@ -106,16 +116,17 @@ export function Header() {
           </button>
         </div>
 
-        {/* Bouton Créer + dropdown */}
+        {/* Bouton Créer (icône seule) + dropdown */}
         <div className="relative shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown((s) => !s)}
-            className="flex items-center gap-2 bg-[#5214FF] text-white px-4 py-2 rounded-md font-medium shadow hover:brightness-95 transition"
+            className="flex items-center justify-center bg-[#5214FF] text-white w-10 h-10 rounded-md shadow hover:brightness-95 transition"
             aria-haspopup="menu"
             aria-expanded={showDropdown}
+            aria-label="Créer"
+            title="Créer"
           >
             <Plus size={18} />
-            Créer
           </button>
 
           <AnimatePresence>
